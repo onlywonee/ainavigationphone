@@ -3,93 +3,92 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI 네비게이션 구간 태깅</title>
+    <title>구간 태깅 내비게이션 프로토타입</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="page">
-      <section class="hero">
-        <h1>AI 네비게이션 구간 태깅</h1>
-        <p>모바일 화면 비율로 최적화하고, 목적지 검색부터 태깅 완료까지 한 번에 확인할 수 있어요.</p>
-      </section>
+    <main class="app">
+      <header class="app-header">
+        <h1>구간 태깅 내비게이션 프로토타입</h1>
+        <p>
+          기본 경로: <strong>신사역 → 고속터미널역</strong> · 경로 더블클릭으로 구간 개인화 모드 진입
+        </p>
+      </header>
 
-      <section class="flow">
-        <header class="section-title">1. 목적지 검색</header>
-        <div class="phone-grid two-col" id="searchFlow">
-          <article class="phone">
-            <div class="phone-inner">
-              <div class="search-bar-row">
-                <button class="icon-btn">←</button>
-                <input id="destinationInput" type="text" placeholder="목적지를 검색하세요 (예: 국민대학교)" />
-                <button id="searchButton" class="icon-btn">🔍</button>
-              </div>
-              <ul id="suggestionList" class="suggestions"></ul>
-              <div class="chips">
-                <button>서울 서초구</button>
-                <button>설렁탕</button>
-                <button>카페</button>
-                <button>주유소</button>
-              </div>
+      <section class="iphone16-frame" aria-label="iPhone 16 ratio frame">
+        <div class="screen">
+          <div class="top-ui">
+            <div class="search-row">
+              <input id="startInput" type="text" value="신사역" aria-label="출발지" />
+              <button id="swapBtn" class="icon-btn" title="출발/도착 바꾸기">⇅</button>
             </div>
-          </article>
+            <div class="search-row">
+              <input id="endInput" type="text" value="고속터미널역" aria-label="도착지" />
+              <button id="searchRouteBtn" class="icon-btn" title="경로 검색">🔍</button>
+            </div>
+            <div id="searchResults" class="search-results" hidden></div>
+          </div>
 
-          <article class="phone map-phone">
-            <div class="phone-inner map">
-              <div class="map-overlay">
-                <strong id="routeTo">국민대학교</strong>
-                <span id="routeSummary">예상 16분 · 17km · 통행료 없음</span>
-              </div>
-              <div class="route-line"></div>
-              <div class="pin start">출발</div>
-              <div class="pin end">도착</div>
-            </div>
-          </article>
-        </div>
-        <p class="caption">기존 네비게이션 UX를 유지하면서 검색/추천 결과를 바로 반영합니다.</p>
-      </section>
+          <div id="map" aria-label="지도"></div>
 
-      <section class="flow">
-        <header class="section-title">2. 구간 태깅 화면 활성화</header>
-        <div class="phone-grid two-col">
-          <article class="phone map-phone">
-            <div class="phone-inner map tagging-map">
-              <div class="tag-box">태깅 구간 선택 중</div>
+          <div class="status-panel">
+            <div>
+              <strong id="routeTitle">신사역 → 고속터미널역</strong>
+              <p id="routeSummary">경로 계산 중...</p>
             </div>
-          </article>
-          <article class="phone map-phone">
-            <div class="phone-inner map tagging-map">
-              <div class="selection"></div>
-              <button class="floating-action">태깅 추가</button>
-            </div>
-          </article>
+            <button id="enterTagModeBtn" class="primary-btn">태깅 모드</button>
+          </div>
+
+          <div id="tagInstruction" class="tag-instruction" hidden>
+            <strong>태깅 모드</strong>
+            <span>경로 위를 터치해서 시작/끝 깃발 2개를 선택하세요.</span>
+          </div>
         </div>
       </section>
 
-      <section class="flow">
-        <header class="section-title">3. 구간 태깅 설정</header>
-        <div class="phone-grid four-col">
-          <article class="phone small"><div class="phone-inner card">기본 선택</div></article>
-          <article class="phone small"><div class="phone-inner card">자연어 입력</div></article>
-          <article class="phone small"><div class="phone-inner card">AI 요약 생성</div></article>
-          <article class="phone small"><div class="phone-inner card">결과 확인/추가</div></article>
-        </div>
-      </section>
+      <aside id="agentSheet" class="agent-sheet" aria-live="polite" hidden>
+        <div class="drag-handle"></div>
+        <h2>AI 에이전트 태깅</h2>
+        <p id="selectedInfo">선택 구간 정보 계산 중...</p>
 
-      <section class="flow">
-        <header class="section-title">4. 구간 태깅 완료</header>
-        <div class="phone-grid one-col">
-          <article class="phone map-phone complete">
-            <div class="phone-inner map">
-              <div class="complete-card">
-                <h3>구간 태깅 완료 ✅</h3>
-                <p id="completionText">국민대학교 갈 때 - 도착 시간 차이가 8분 이하면 이 구간은 피하고 성수대로로 우회합니다.</p>
-              </div>
-            </div>
-          </article>
+        <label for="contextInput">음성/텍스트 맥락 입력</label>
+        <div class="context-row">
+          <input id="contextInput" type="text" placeholder="예: 퇴근시간엔 이 구간 막히면 피하고 싶어" />
+          <button id="voiceBtn" class="icon-btn" title="음성 입력">🎤</button>
         </div>
-      </section>
+
+        <button id="analyzeBtn" class="secondary-btn">AI 해석하기</button>
+        <div id="analysisResult" class="analysis-result">해석 전</div>
+
+        <div class="confirm-box">
+          <p>태깅 완료하시겠습니까?</p>
+          <div class="btn-group">
+            <button id="confirmYes" class="primary-btn">Y</button>
+            <button id="confirmNo" class="ghost-btn">N</button>
+          </div>
+        </div>
+
+        <div id="rerouteBox" class="confirm-box" hidden>
+          <p>해당 태깅을 반영하여 경로를 재설정할까요?</p>
+          <div class="btn-group">
+            <button id="rerouteYes" class="primary-btn">Y</button>
+            <button id="rerouteNo" class="ghost-btn">N</button>
+          </div>
+        </div>
+      </aside>
     </main>
 
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
     <script src="script.js"></script>
   </body>
 </html>
