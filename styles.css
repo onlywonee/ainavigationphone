@@ -1,74 +1,58 @@
 :root {
-  --bg: #e8e8eb;
-  --panel: #ffffff;
+  --bg: #e5e7eb;
+  --line: #d7dce6;
+  --primary: #1164ff;
   --ink: #171922;
-  --sub: #5a6070;
-  --line: #d9dee7;
-  --primary: #1463ff;
-  --sheet: #f5f7fb;
-  --danger: #ed5b4c;
+  --sub: #5c6374;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
   background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--ink);
 }
 
-.app {
-  min-height: 100vh;
-  padding: 18px 12px 28px;
+.app-only {
+  width: 100%;
   display: grid;
-  justify-items: center;
-  gap: 14px;
-}
-
-.app-header {
-  text-align: center;
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: clamp(1.15rem, 2.9vw, 1.9rem);
-}
-
-.app-header p {
-  margin: 6px 0 0;
-  color: var(--sub);
-  font-size: 0.95rem;
+  place-items: center;
+  padding: 8px;
 }
 
 .iphone16-frame {
   width: min(430px, 100%);
   aspect-ratio: 1179 / 2556;
   border: 3px solid #111;
-  border-radius: 48px;
-  padding: 8px;
+  border-radius: 46px;
   background: #111;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+  padding: 8px;
 }
 
 .screen {
   height: 100%;
-  border-radius: 40px;
-  overflow: hidden;
   position: relative;
-  background: #111;
+  overflow: hidden;
+  border-radius: 37px;
 }
 
-#map {
+#map { position: absolute; inset: 0; }
+
+.top-ui,
+.bottom-ui,
+.tag-instruction,
+.agent-sheet,
+.left-floating {
   position: absolute;
-  inset: 0;
+  z-index: 1000;
 }
 
 .top-ui {
-  position: absolute;
-  z-index: 1000;
   top: 10px;
   left: 10px;
   right: 10px;
@@ -78,55 +62,73 @@ body {
 
 .search-row {
   display: grid;
-  grid-template-columns: 1fr 42px;
-  gap: 8px;
+  grid-template-columns: 40px 1fr 40px;
+  gap: 7px;
+}
+
+.search-row.second {
+  grid-template-columns: 1fr 40px;
+}
+
+.left-combo {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 7px;
 }
 
 .search-row input {
+  width: 100%;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.92);
   border-radius: 12px;
-  padding: 11px 12px;
+  padding: 10px;
+  background: rgba(242, 245, 251, 0.96);
   font-size: 1rem;
 }
 
 .icon-btn,
 .primary-btn,
 .secondary-btn,
-.ghost-btn {
-  border-radius: 12px;
+.ghost-btn,
+.tab,
+.route-card,
+.circle-btn {
   border: 1px solid transparent;
+  border-radius: 11px;
   font-size: 0.95rem;
-  cursor: pointer;
 }
 
-.icon-btn {
+.icon-btn,
+.circle-btn {
   border-color: var(--line);
-  background: rgba(255, 255, 255, 0.93);
+  background: rgba(255, 255, 255, 0.96);
 }
 
-.primary-btn {
+.plus { font-size: 1.2rem; }
+
+.mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  padding: 4px;
+  gap: 4px;
+}
+
+.tab {
+  background: transparent;
+  padding: 7px;
+}
+
+.tab.active {
   background: var(--primary);
   color: #fff;
-  padding: 10px 12px;
-}
-
-.secondary-btn {
-  background: #eaf1ff;
-  color: #134fd4;
-  border-color: #bfd3ff;
-  padding: 10px 12px;
-}
-
-.ghost-btn {
-  background: #fff;
-  border-color: #cfd7e7;
-  padding: 10px 12px;
+  border-radius: 999px;
 }
 
 .search-results {
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 12px;
   border: 1px solid var(--line);
   max-height: 160px;
   overflow: auto;
@@ -134,115 +136,168 @@ body {
 
 .search-item {
   width: 100%;
-  padding: 10px 12px;
-  border: 0;
-  border-bottom: 1px solid #edf0f7;
   background: transparent;
+  border: 0;
+  border-bottom: 1px solid #eceff6;
   text-align: left;
-  color: #303443;
+  padding: 10px;
 }
 
-.search-item:last-child {
-  border-bottom: 0;
+.search-item:last-child { border-bottom: 0; }
+
+.left-floating {
+  left: 10px;
+  bottom: 156px;
+  display: grid;
+  gap: 9px;
 }
 
-.status-panel {
-  position: absolute;
-  z-index: 1000;
+.circle-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+}
+
+.bottom-ui {
   left: 10px;
   right: 10px;
-  bottom: 12px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid var(--line);
-  padding: 12px;
+  bottom: 10px;
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  align-items: center;
+  gap: 9px;
 }
 
-.status-panel p {
-  margin: 3px 0 0;
+.route-cards {
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+  gap: 8px;
+}
+
+.route-card {
+  text-align: left;
+  padding: 9px 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #dbe3f4;
+  color: #222938;
+}
+
+.route-card.selected {
+  border: 2px solid #4e8dff;
+  background: rgba(243, 248, 255, 0.97);
+}
+
+.route-card strong {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 3px;
+}
+
+.route-card span {
   color: var(--sub);
-  font-size: 0.89rem;
+  font-size: 0.82rem;
+}
+
+.cta-row {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 8px;
+}
+
+.primary-btn,
+.secondary-btn,
+.ghost-btn {
+  padding: 10px 11px;
+}
+
+.primary-btn {
+  background: var(--primary);
+  color: #fff;
+}
+
+.primary-btn.start {
+  font-size: 1.04rem;
+  font-weight: 700;
+}
+
+.secondary-btn {
+  background: #eaf1ff;
+  color: #0e4fd2;
+  border-color: #b9cdfd;
+}
+
+.ghost-btn {
+  border-color: #ced7e7;
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .tag-instruction {
-  position: absolute;
-  z-index: 1000;
   left: 10px;
   right: 10px;
-  bottom: 98px;
-  border-radius: 12px;
-  padding: 10px;
-  background: rgba(20, 99, 255, 0.9);
+  bottom: 120px;
   color: #fff;
+  background: rgba(17, 75, 188, 0.92);
+  border-radius: 12px;
+  padding: 9px;
   display: grid;
-  gap: 4px;
-  font-size: 0.9rem;
+  gap: 2px;
+  font-size: 0.86rem;
 }
 
 .agent-sheet {
-  width: min(430px, 100%);
-  background: var(--sheet);
-  border: 1px solid var(--line);
-  border-radius: 24px 24px 14px 14px;
-  padding: 12px 12px 16px;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  background: rgba(249, 250, 254, 0.98);
+  border: 1px solid #cfd9ef;
+  border-radius: 18px;
+  padding: 10px;
   display: grid;
-  gap: 9px;
-  box-shadow: 0 -8px 20px rgba(8, 20, 55, 0.16);
+  gap: 8px;
+  box-shadow: 0 -8px 20px rgba(5, 15, 34, 0.22);
 }
 
 .drag-handle {
-  width: 44px;
+  justify-self: center;
+  width: 38px;
   height: 5px;
   border-radius: 999px;
-  background: #ccd3e2;
-  justify-self: center;
+  background: #c6d0e3;
 }
 
-.agent-sheet h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
+.agent-sheet h2,
 .agent-sheet p,
 .agent-sheet label {
   margin: 0;
-  color: #353a46;
-  font-size: 0.92rem;
 }
+
+.agent-sheet h2 { font-size: 1.02rem; }
 
 .context-row {
   display: grid;
-  grid-template-columns: 1fr 42px;
+  grid-template-columns: 1fr 40px;
   gap: 8px;
 }
 
 .context-row input {
-  border: 1px solid #ccd6ea;
-  border-radius: 10px;
-  padding: 10px;
-  font-size: 0.95rem;
+  border: 1px solid #cad5ea;
+  border-radius: 9px;
+  padding: 9px;
 }
 
 .analysis-result {
-  border: 1px dashed #9cb5ef;
+  border: 1px dashed #9cb7ef;
   border-radius: 10px;
-  padding: 10px;
+  padding: 8px;
   background: #f1f6ff;
-  font-size: 0.92rem;
-  line-height: 1.35;
+  font-size: 0.9rem;
 }
 
 .confirm-box {
-  border: 1px solid #d7deed;
-  border-radius: 12px;
+  border: 1px solid #d8dff0;
+  border-radius: 10px;
   background: #fff;
-  padding: 10px;
+  padding: 8px;
   display: grid;
-  gap: 8px;
+  gap: 7px;
 }
 
 .btn-group {
@@ -252,17 +307,13 @@ body {
 }
 
 .selected-segment-glow {
-  filter: drop-shadow(0 0 7px rgba(75, 184, 255, 0.86));
+  filter: drop-shadow(0 0 7px rgba(83, 204, 255, 0.93));
   animation: sparkle 1.2s ease-in-out infinite alternate;
 }
 
 @keyframes sparkle {
-  from {
-    filter: drop-shadow(0 0 4px rgba(75, 184, 255, 0.5));
-  }
-  to {
-    filter: drop-shadow(0 0 13px rgba(170, 110, 255, 0.9));
-  }
+  from { filter: drop-shadow(0 0 3px rgba(83, 204, 255, 0.55)); }
+  to { filter: drop-shadow(0 0 13px rgba(194, 127, 255, 0.95)); }
 }
 
 .tag-marker {
@@ -271,23 +322,13 @@ body {
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  background: var(--danger);
+  background: #ef5948;
   color: #fff;
   font-size: 10px;
   border: 1px solid #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.33);
 }
 
 @media (max-width: 420px) {
-  .app {
-    padding-inline: 8px;
-  }
-
-  .iphone16-frame {
-    border-radius: 40px;
-  }
-
-  .screen {
-    border-radius: 32px;
-  }
+  .iphone16-frame { border-radius: 40px; }
+  .screen { border-radius: 31px; }
 }
