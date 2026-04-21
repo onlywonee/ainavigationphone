@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>T맵 스타일 구간 태깅 프로토타입</title>
+    <title>T맵 스타일 구간 태깅</title>
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -13,85 +13,83 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="tmapp" aria-label="T-map style app screen">
-      <div class="top-ui">
+    <main class="app">
+      <div id="map"></div>
+
+      <header class="top-panel">
+        <div class="statusbar">
+          <span>1:45</span>
+          <span>📶 30%</span>
+        </div>
+
         <div class="search-row">
-          <button id="backBtn" class="icon-btn" aria-label="뒤로">‹</button>
-          <input id="startInput" type="text" value="신사역" aria-label="출발지" />
-          <button id="swapBtn" class="icon-btn" title="출발/도착 바꾸기">⇅</button>
+          <button class="icon">‹</button>
+          <input id="startInput" value="신사역" />
+          <button id="swapBtn" class="icon">⇅</button>
         </div>
-        <div class="search-row second">
-          <div class="left-combo">
-            <button class="icon-btn plus" aria-hidden="true">+</button>
-            <input id="endInput" type="text" value="고속터미널역" aria-label="도착지" />
-          </div>
-          <button id="searchRouteBtn" class="icon-btn" title="경로 검색">🔍</button>
+
+        <div class="search-row">
+          <button class="icon">＋</button>
+          <input id="endInput" value="고속터미널역" />
+          <button id="searchRouteBtn" class="icon">⌕</button>
         </div>
-        <div class="mode-tabs">
-          <button class="tab active">🚘 16분</button>
-          <button class="tab">🚌</button>
-          <button class="tab">🚶</button>
+
+        <div class="modes">
+          <button class="chip active" id="carMode">🚘 <span id="etaChip">16분</span></button>
+          <button class="chip">🚌</button>
+          <button class="chip">🚶</button>
         </div>
+
         <div id="searchResults" class="search-results" hidden></div>
+      </header>
+
+      <div class="ad-pill">🪙 만보기로 걷고 5만원 받으세요</div>
+
+      <div class="left-tools">
+        <button>★</button>
+        <button>◫</button>
+        <button>◎</button>
       </div>
 
-      <div id="map" aria-label="지도"></div>
+      <div class="car-pill">🚗 미등록 ▾</div>
 
-      <div class="left-floating">
-        <button class="circle-btn">★</button>
-        <button class="circle-btn">◫</button>
-        <button class="circle-btn">◎</button>
-      </div>
-
-      <div class="bottom-ui">
-        <div class="route-cards">
-          <button class="route-card selected">
-            <strong id="routeTitle">신사역 → 고속터미널역</strong>
-            <span id="routeSummary">경로 계산 중...</span>
-          </button>
-          <button class="route-card dimmed">무료도로 우선<br /><span>비교 경로</span></button>
+      <section class="route-panel">
+        <div class="cards">
+          <article class="card selected">
+            <strong>티맵추천</strong>
+            <h3 id="primaryTime">16분</h3>
+            <p id="primaryMeta">17km · 통행료 없음</p>
+          </article>
+          <article class="card">
+            <strong>무료도로 우선</strong>
+            <h3 id="altTime">17분</h3>
+            <p id="altMeta">17km · 통행료 없음</p>
+          </article>
         </div>
-        <div class="cta-row">
-          <button id="enterTagModeBtn" class="ghost-btn">태깅 모드</button>
-          <button class="primary-btn start">안내시작</button>
+        <div class="start-row">
+          <button id="enterTagModeBtn" class="ghost">태깅 모드</button>
+          <button class="start">안내시작</button>
         </div>
-      </div>
+      </section>
 
-      <div id="tagInstruction" class="tag-instruction" hidden>
-        <strong>태깅 모드</strong>
-        <span>경로를 더블탭/더블클릭하고, 시작/끝 깃발을 선택하세요.</span>
-      </div>
+      <div id="tagHint" class="tag-hint" hidden>경로를 더블클릭 후, 경로 위 2지점을 눌러 구간을 선택하세요.</div>
 
-      <aside id="agentSheet" class="agent-sheet" aria-live="polite" hidden>
-        <div class="drag-handle"></div>
-        <h2>AI 구간 태깅</h2>
-        <p id="selectedInfo">선택 구간 정보 계산 중...</p>
+      <section id="loadingSheet" class="sheet" hidden>
+        <h2>AI가 구간 태깅 요약중이에요...</h2>
+        <button id="voiceBtn" class="mic">🎤</button>
+        <button id="showProposalBtn" class="text-link">텍스트로 입력하기</button>
+      </section>
 
-        <label for="contextInput">음성/텍스트 맥락 입력</label>
-        <div class="context-row">
-          <input id="contextInput" type="text" placeholder="예: 퇴근시간 정체 시 이 구간 회피" />
-          <button id="voiceBtn" class="icon-btn" title="음성 입력">🎤</button>
-        </div>
+      <section id="proposalSheet" class="sheet" hidden>
+        <h2>이렇게 태깅할까요?</h2>
+        <p id="proposalText">국민대학교 갈 때 - 도착 시간 차이가 8분 이하면 이 구간은 피하고 성수대로로 우회합니다.</p>
+        <button id="confirmTagBtn" class="add-btn">구간 태깅 추가하기</button>
+      </section>
 
-        <button id="analyzeBtn" class="secondary-btn">AI 해석하기</button>
-        <div id="analysisResult" class="analysis-result">해석 전</div>
-
-        <div class="confirm-box">
-          <p>태깅 완료하시겠습니까?</p>
-          <div class="btn-group">
-            <button id="confirmYes" class="primary-btn">Y</button>
-            <button id="confirmNo" class="ghost-btn">N</button>
-          </div>
-        </div>
-
-        <div id="rerouteBox" class="confirm-box" hidden>
-          <p>해당 태깅 반영 후 경로를 재설정할까요?</p>
-          <div class="btn-group">
-            <button id="rerouteYes" class="primary-btn">Y</button>
-            <button id="rerouteNo" class="ghost-btn">N</button>
-          </div>
-        </div>
-      </aside>
+      <section id="completeToast" class="complete" hidden>
+        <h2>구간 태깅 완료 ✔</h2>
+        <p id="completeText">국민대학교 갈 때 도착 예정시간의 차이가 8분 이하면 이 구간은 피하고 성수대로 우회합니다.</p>
+      </section>
     </main>
 
     <script

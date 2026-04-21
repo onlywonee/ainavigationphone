@@ -3,13 +3,9 @@ const DEFAULT_POINTS = {
   end: { name: "고속터미널역", lat: 37.5049, lon: 127.0054 },
 };
 
-const map = L.map("map", {
-  zoomControl: false,
-  doubleClickZoom: false,
-}).setView([37.595, 126.988], 13);
-
+const map = L.map("map", { zoomControl: false, doubleClickZoom: false }).setView([37.5108, 127.013], 14);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  attribution: '&copy; OpenStreetMap contributors',
   maxZoom: 19,
 }).addTo(map);
 
@@ -17,23 +13,23 @@ const startInput = document.getElementById("startInput");
 const endInput = document.getElementById("endInput");
 const swapBtn = document.getElementById("swapBtn");
 const searchRouteBtn = document.getElementById("searchRouteBtn");
-const routeTitle = document.getElementById("routeTitle");
-const routeSummary = document.getElementById("routeSummary");
 const searchResults = document.getElementById("searchResults");
-const enterTagModeBtn = document.getElementById("enterTagModeBtn");
-const tagInstruction = document.getElementById("tagInstruction");
 
-const agentSheet = document.getElementById("agentSheet");
-const selectedInfo = document.getElementById("selectedInfo");
-const contextInput = document.getElementById("contextInput");
-const voiceBtn = document.getElementById("voiceBtn");
-const analyzeBtn = document.getElementById("analyzeBtn");
-const analysisResult = document.getElementById("analysisResult");
-const confirmYes = document.getElementById("confirmYes");
-const confirmNo = document.getElementById("confirmNo");
-const rerouteBox = document.getElementById("rerouteBox");
-const rerouteYes = document.getElementById("rerouteYes");
-const rerouteNo = document.getElementById("rerouteNo");
+const enterTagModeBtn = document.getElementById("enterTagModeBtn");
+const tagHint = document.getElementById("tagHint");
+const loadingSheet = document.getElementById("loadingSheet");
+const proposalSheet = document.getElementById("proposalSheet");
+const completeToast = document.getElementById("completeToast");
+const showProposalBtn = document.getElementById("showProposalBtn");
+const confirmTagBtn = document.getElementById("confirmTagBtn");
+const proposalText = document.getElementById("proposalText");
+const completeText = document.getElementById("completeText");
+
+const primaryTime = document.getElementById("primaryTime");
+const primaryMeta = document.getElementById("primaryMeta");
+const altTime = document.getElementById("altTime");
+const altMeta = document.getElementById("altMeta");
+const etaChip = document.getElementById("etaChip");
 
 let startPoint = { ...DEFAULT_POINTS.start };
 let endPoint = { ...DEFAULT_POINTS.end };
@@ -41,27 +37,13 @@ let routeCoords = [];
 let routeLine;
 let routeHitLine;
 let selectedSegmentLine;
-let startMarker;
-let endMarker;
 let selectedIndices = [];
 let selectedFlags = [];
-let tagMarkers = [];
+let startMarker;
+let endMarker;
 
-const taggedSegments = [];
-
-const flagIcon = L.divIcon({
-  html: "🚩",
-  className: "",
-  iconSize: [22, 22],
-  iconAnchor: [11, 18],
-});
-
-const tagIcon = L.divIcon({
-  html: '<div class="tag-marker">T</div>',
-  className: "",
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
-});
+const flagIcon = L.divIcon({ html: "📍", className: "", iconSize: [20, 20], iconAnchor: [10, 16] });
+const tagIcon = L.divIcon({ html: '<div class="tag-marker"></div>', className: "", iconSize: [16, 16], iconAnchor: [8, 8] });
 
 function formatDistance(meters) {
   if (meters < 1000) return `${Math.round(meters)}m`;
@@ -70,282 +52,234 @@ function formatDistance(meters) {
 
 function formatDuration(seconds) {
   const min = Math.round(seconds / 60);
-  if (min < 60) return `${min}분`;
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return `${h}시간 ${m}분`;
+  return `${min}분`;
+}
+
+async function geocode(query) {
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("limit", "5");
+  url.searchParams.set("accept-language", "ko");
+  url.searchParams.set("q", query);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("검색 실패");
+  return res.json();
+}
+
+function hideFlowPanels() {
+  loadingSheet.hidden = true;
+  proposalSheet.hidden = true;
+  completeToast.hidden = true;
+}
+
+function renderSearchResults(items, type) {
+  searchResults.innerHTML = "";
+  items.forEach((item) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "search-item";
+    button.textContent = item.display_name;
+    button.addEventListener("click", () => {
+      const picked = { name: item.display_name.split(",")[0], lat: Number(item.lat), lon: Number(item.lon) };
+      if (type === "start") {
+        startPoint = picked;
+        startInput.value = picked.name;
+      } else {
+        endPoint = picked;
+        endInput.value = picked.name;
+      }
+      searchResults.hidden = true;
+      fetchRoute();
+    });
+    searchResults.appendChild(button);
+  });
+  searchResults.hidden = items.length === 0;
+}
+
+async function searchPlace(type) {
+  const text = (type === "start" ? startInput.value : endInput.value).trim();
+  if (!text) return;
+  try {
+    const list = await geocode(text);
+    renderSearchResults(list, type);
+  } catch {
+    searchResults.innerHTML = '<button class="search-item" type="button">검색 오류</button>';
+    searchResults.hidden = false;
+  }
 }
 
 function toLatLng(coords) {
   return coords.map(([lon, lat]) => [lat, lon]);
 }
 
-async function geocode(query) {
-  const url = new URL("https://nominatim.openstreetmap.org/search");
-  url.searchParams.set("format", "json");
-  url.searchParams.set("limit", "6");
-  url.searchParams.set("accept-language", "ko");
-  url.searchParams.set("q", query);
-
-  const res = await fetch(url, {
-    headers: {
-      "Accept": "application/json",
-    },
-  });
-  if (!res.ok) throw new Error("검색 API 실패");
-  return res.json();
-}
-
-function renderSearchResults(items, type) {
-  searchResults.innerHTML = "";
-  items.forEach((item) => {
-    const btn = document.createElement("button");
-    btn.className = "search-item";
-    btn.textContent = item.display_name;
-    btn.type = "button";
-    btn.addEventListener("click", () => {
-      const point = {
-        name: item.display_name.split(",")[0],
-        lat: Number(item.lat),
-        lon: Number(item.lon),
-      };
-      if (type === "start") {
-        startPoint = point;
-        startInput.value = point.name;
-      } else {
-        endPoint = point;
-        endInput.value = point.name;
-      }
-      searchResults.hidden = true;
-      fetchRoute();
-    });
-    searchResults.appendChild(btn);
-  });
-  searchResults.hidden = items.length === 0;
-}
-
-async function searchPlace(type) {
-  const query = type === "start" ? startInput.value.trim() : endInput.value.trim();
-  if (!query) return;
-
-  try {
-    const items = await geocode(query);
-    if (items.length === 0) {
-      searchResults.innerHTML = '<button class="search-item" type="button">검색 결과 없음</button>';
-      searchResults.hidden = false;
-      return;
-    }
-    renderSearchResults(items, type);
-  } catch (error) {
-    searchResults.innerHTML = '<button class="search-item" type="button">검색 중 오류가 발생했습니다.</button>';
-    searchResults.hidden = false;
-  }
-}
-
-function clearFlags() {
-  selectedFlags.forEach((marker) => map.removeLayer(marker));
+function clearSelection() {
+  selectedFlags.forEach((m) => map.removeLayer(m));
   selectedFlags = [];
   selectedIndices = [];
-
   if (selectedSegmentLine) {
     map.removeLayer(selectedSegmentLine);
     selectedSegmentLine = null;
   }
 }
 
-function exitTagMode() {
-  tagInstruction.hidden = true;
-  clearFlags();
+function distanceForChunk(chunk) {
+  return chunk.reduce((sum, point, i) => {
+    if (!i) return sum;
+    const prev = chunk[i - 1];
+    return sum + L.latLng(prev[1], prev[0]).distanceTo(L.latLng(point[1], point[0]));
+  }, 0);
 }
 
-function findNearestCoordIndex(targetLatLng) {
-  let bestIndex = 0;
-  let bestDistance = Number.POSITIVE_INFINITY;
-
-  routeCoords.forEach((coord, index) => {
-    const ll = L.latLng(coord[1], coord[0]);
-    const dist = ll.distanceTo(targetLatLng);
-    if (dist < bestDistance) {
-      bestDistance = dist;
-      bestIndex = index;
+function nearestIndex(target) {
+  let best = 0;
+  let dist = Infinity;
+  routeCoords.forEach((coord, idx) => {
+    const d = L.latLng(coord[1], coord[0]).distanceTo(target);
+    if (d < dist) {
+      dist = d;
+      best = idx;
     }
   });
+  return best;
+}
 
-  return bestIndex;
+function enterAiFlow() {
+  hideFlowPanels();
+  loadingSheet.hidden = false;
 }
 
 function updateSelectedSegment() {
-  if (selectedIndices.length !== 2) return;
-
   const sorted = [...selectedIndices].sort((a, b) => a - b);
-  const chunk = routeCoords.slice(sorted[0], sorted[1] + 1);
-  if (chunk.length < 2) return;
+  const segment = routeCoords.slice(sorted[0], sorted[1] + 1);
+  if (segment.length < 2) return;
 
   if (selectedSegmentLine) map.removeLayer(selectedSegmentLine);
-
-  selectedSegmentLine = L.polyline(toLatLng(chunk), {
-    color: "#72d8ff",
-    weight: 9,
+  selectedSegmentLine = L.polyline(toLatLng(segment), {
+    color: "#ff5eb7",
+    weight: 8,
     opacity: 0.95,
     className: "selected-segment-glow",
   }).addTo(map);
 
-  const segmentMeters = chunk.reduce((sum, cur, i) => {
-    if (i === 0) return sum;
-    const prev = chunk[i - 1];
-    return sum + L.latLng(prev[1], prev[0]).distanceTo(L.latLng(cur[1], cur[0]));
-  }, 0);
+  const meters = Math.round(distanceForChunk(segment));
+  const sentence = `${endPoint.name} 갈 때 도착 시간 차이가 8분 이하면, 선택한 ${formatDistance(meters)} 구간은 피하고 우회합니다.`;
+  proposalText.textContent = sentence;
+  completeText.textContent = sentence;
 
-  selectedInfo.textContent = `선택 구간 길이 ${formatDistance(segmentMeters)} · 포인트 ${sorted[0]}~${sorted[1]}`;
-  agentSheet.hidden = false;
+  enterAiFlow();
 }
 
-function handleRoutePick(e) {
-  if (tagInstruction.hidden) return;
-
-  const idx = findNearestCoordIndex(e.latlng);
+function onRoutePick(e) {
+  if (tagHint.hidden) return;
+  const idx = nearestIndex(e.latlng);
+  const marker = L.marker([routeCoords[idx][1], routeCoords[idx][0]], { icon: flagIcon }).addTo(map);
+  selectedFlags.push(marker);
   selectedIndices.push(idx);
 
-  const flag = L.marker([routeCoords[idx][1], routeCoords[idx][0]], {
-    icon: flagIcon,
-  }).addTo(map);
-  selectedFlags.push(flag);
-
-  if (selectedIndices.length === 2) {
-    updateSelectedSegment();
-  }
-
+  if (selectedIndices.length === 2) updateSelectedSegment();
   if (selectedIndices.length > 2) {
-    clearFlags();
-    const firstIdx = findNearestCoordIndex(e.latlng);
-    selectedIndices = [firstIdx];
-    selectedFlags.push(
-      L.marker([routeCoords[firstIdx][1], routeCoords[firstIdx][0]], {
-        icon: flagIcon,
-      }).addTo(map),
-    );
+    clearSelection();
+    selectedIndices = [idx];
+    selectedFlags = [marker];
   }
 }
 
-function applyRouteLayers(coordinates) {
-  routeCoords = coordinates;
+function applyRoute(coords) {
+  routeCoords = coords;
+  clearSelection();
+  hideFlowPanels();
+  tagHint.hidden = true;
 
   if (routeLine) map.removeLayer(routeLine);
   if (routeHitLine) map.removeLayer(routeHitLine);
 
-  routeLine = L.polyline(toLatLng(coordinates), {
-    color: "#1de46f",
-    weight: 7,
-    opacity: 0.95,
-  }).addTo(map);
-
-  routeHitLine = L.polyline(toLatLng(coordinates), {
-    color: "#ffffff",
-    weight: 21,
-    opacity: 0.01,
-  }).addTo(map);
-  routeHitLine.on("dblclick", () => {
-    tagInstruction.hidden = false;
-    selectedInfo.textContent = "경로에서 시작/끝 깃발을 선택해주세요.";
-  });
-  routeHitLine.on("click", handleRoutePick);
+  routeLine = L.polyline(toLatLng(coords), { color: "#17c96d", weight: 7, opacity: 0.95 }).addTo(map);
+  routeHitLine = L.polyline(toLatLng(coords), { color: "#fff", weight: 21, opacity: 0.01 }).addTo(map);
+  routeHitLine.on("dblclick", () => { tagHint.hidden = false; });
+  routeHitLine.on("click", onRoutePick);
 
   if (startMarker) map.removeLayer(startMarker);
   if (endMarker) map.removeLayer(endMarker);
+  startMarker = L.marker([startPoint.lat, startPoint.lon]).addTo(map);
+  endMarker = L.marker([endPoint.lat, endPoint.lon]).addTo(map);
 
-  startMarker = L.marker([startPoint.lat, startPoint.lon]).addTo(map).bindPopup("출발");
-  endMarker = L.marker([endPoint.lat, endPoint.lon]).addTo(map).bindPopup("도착");
-
-  map.fitBounds(routeLine.getBounds(), { padding: [20, 20] });
+  map.fitBounds(routeLine.getBounds(), { padding: [36, 36] });
 }
 
-async function fetchRoute(options = {}) {
-  routeTitle.textContent = `${startPoint.name} → ${endPoint.name}`;
-  routeSummary.textContent = "경로 계산 중...";
-  exitTagMode();
-  agentSheet.hidden = true;
-  rerouteBox.hidden = true;
+async function fetchRoute() {
+  hideFlowPanels();
+  tagHint.hidden = true;
+  const url = new URL(`https://router.project-osrm.org/route/v1/driving/${startPoint.lon},${startPoint.lat};${endPoint.lon},${endPoint.lat}`);
+  url.searchParams.set("overview", "full");
+  url.searchParams.set("geometries", "geojson");
 
   try {
-    let path = `${startPoint.lon},${startPoint.lat};${endPoint.lon},${endPoint.lat}`;
-    if (options.via) {
-      path = `${startPoint.lon},${startPoint.lat};${options.via.lon},${options.via.lat};${endPoint.lon},${endPoint.lat}`;
-    }
-
-    const url = new URL(`https://router.project-osrm.org/route/v1/driving/${path}`);
-    url.searchParams.set("overview", "full");
-    url.searchParams.set("geometries", "geojson");
-    url.searchParams.set("alternatives", "false");
-
     const res = await fetch(url);
-    if (!res.ok) throw new Error("OSRM API 오류");
-
     const data = await res.json();
-    if (!data.routes || data.routes.length === 0) throw new Error("경로가 없습니다.");
-
+    if (!data.routes?.length) throw new Error();
     const route = data.routes[0];
-    applyRouteLayers(route.geometry.coordinates);
+    applyRoute(route.geometry.coordinates);
 
-    routeSummary.textContent = `${formatDuration(route.duration)} · ${formatDistance(route.distance)} · 태그 ${taggedSegments.length}개`;
-  } catch (error) {
-    routeSummary.textContent = "경로 계산 실패. 다시 시도해주세요.";
+    const eta = formatDuration(route.duration);
+    const dist = formatDistance(route.distance);
+    primaryTime.textContent = eta;
+    etaChip.textContent = eta;
+    primaryMeta.textContent = `${dist} · 통행료 없음`;
+    altTime.textContent = `${Math.max(1, Math.round(route.duration / 60) + 1)}분`;
+    altMeta.textContent = `${dist} · 통행료 없음`;
+  } catch {
+    primaryMeta.textContent = "경로 계산 실패";
   }
 }
 
-function simpleInterpretation(text) {
-  const value = text.trim();
-  if (!value) return "입력이 비어 있어 기본 규칙(혼잡 시 회피)으로 태깅합니다.";
-
-  let reason = "일반";
-  if (/퇴근|막히|정체/.test(value)) reason = "교통혼잡";
-  if (/유료|통행료|비용/.test(value)) reason = "비용민감";
-  if (/안전|야간|어두/.test(value)) reason = "안전우선";
-  if (/빨리|시간|지연/.test(value)) reason = "도착시간우선";
-
-  return `분석결과: ${reason}. 조건 발생 시 선택 구간을 회피하고 대체 경로를 우선 추천합니다.`;
-}
-
-function midpointForSelectedSegment() {
-  const sorted = [...selectedIndices].sort((a, b) => a - b);
-  const start = routeCoords[sorted[0]];
-  const end = routeCoords[sorted[1]];
-  const midLon = (start[0] + end[0]) / 2;
-  const midLat = (start[1] + end[1]) / 2;
-
-  return {
-    lon: midLon + 0.01,
-    lat: midLat + 0.01,
-  };
-}
-
-function lockTagOnMap() {
-  const sorted = [...selectedIndices].sort((a, b) => a - b);
-  taggedSegments.push(sorted);
-
-  const midIndex = Math.floor((sorted[0] + sorted[1]) / 2);
-  const mid = routeCoords[midIndex];
-  const marker = L.marker([mid[1], mid[0]], { icon: tagIcon }).addTo(map);
-  tagMarkers.push(marker);
-
-  routeSummary.textContent = routeSummary.textContent.replace(/태그 \d+개/, `태그 ${taggedSegments.length}개`);
-}
-
 enterTagModeBtn.addEventListener("click", () => {
-  tagInstruction.hidden = false;
-  selectedInfo.textContent = "경로를 터치해 2개의 깃발을 지정하세요.";
+  tagHint.hidden = false;
+  hideFlowPanels();
 });
 
-searchRouteBtn.addEventListener("click", () => {
-  Promise.all([searchPlace("start"), searchPlace("end")]);
+showProposalBtn.addEventListener("click", () => {
+  loadingSheet.hidden = true;
+  proposalSheet.hidden = false;
 });
 
-startInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") searchPlace("start");
+document.getElementById("voiceBtn").addEventListener("click", () => {
+  const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Speech) {
+    loadingSheet.hidden = true;
+    proposalSheet.hidden = false;
+    return;
+  }
+
+  const rec = new Speech();
+  rec.lang = "ko-KR";
+  rec.maxAlternatives = 1;
+  rec.onresult = () => {
+    loadingSheet.hidden = true;
+    proposalSheet.hidden = false;
+  };
+  rec.onerror = () => {
+    loadingSheet.hidden = true;
+    proposalSheet.hidden = false;
+  };
+  rec.start();
 });
 
-endInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") searchPlace("end");
+confirmTagBtn.addEventListener("click", () => {
+  if (selectedIndices.length !== 2) return;
+  const sorted = [...selectedIndices].sort((a, b) => a - b);
+  const mid = routeCoords[Math.floor((sorted[0] + sorted[1]) / 2)];
+  L.marker([mid[1], mid[0]], { icon: tagIcon }).addTo(map);
+  proposalSheet.hidden = true;
+  completeToast.hidden = false;
+  setTimeout(() => {
+    completeToast.hidden = true;
+    tagHint.hidden = true;
+  }, 2200);
 });
+
+searchRouteBtn.addEventListener("click", () => Promise.all([searchPlace("start"), searchPlace("end")]));
+startInput.addEventListener("keydown", (e) => { if (e.key === "Enter") searchPlace("start"); });
+endInput.addEventListener("keydown", (e) => { if (e.key === "Enter") searchPlace("end"); });
 
 swapBtn.addEventListener("click", () => {
   [startPoint, endPoint] = [endPoint, startPoint];
@@ -353,67 +287,5 @@ swapBtn.addEventListener("click", () => {
   fetchRoute();
 });
 
-analyzeBtn.addEventListener("click", () => {
-  analysisResult.textContent = simpleInterpretation(contextInput.value);
-});
-
-confirmYes.addEventListener("click", () => {
-  if (selectedIndices.length !== 2) {
-    analysisResult.textContent = "먼저 경로에서 시작/끝 구간을 선택해주세요.";
-    return;
-  }
-  lockTagOnMap();
-  rerouteBox.hidden = false;
-});
-
-confirmNo.addEventListener("click", () => {
-  analysisResult.textContent = "태깅을 취소했습니다.";
-  rerouteBox.hidden = true;
-  clearFlags();
-});
-
-rerouteYes.addEventListener("click", () => {
-  if (selectedIndices.length !== 2) return;
-  const via = midpointForSelectedSegment();
-  fetchRoute({ via });
-  rerouteBox.hidden = true;
-  analysisResult.textContent = "태깅 조건 반영 경로로 재탐색했습니다.";
-});
-
-rerouteNo.addEventListener("click", () => {
-  rerouteBox.hidden = true;
-  analysisResult.textContent = "현재 경로를 유지합니다.";
-  clearFlags();
-  tagInstruction.hidden = true;
-});
-
-voiceBtn.addEventListener("click", () => {
-  const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Speech) {
-    analysisResult.textContent = "이 브라우저는 음성 입력을 지원하지 않습니다. 텍스트 입력을 사용해주세요.";
-    return;
-  }
-
-  const recognition = new Speech();
-  recognition.lang = "ko-KR";
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-
-  recognition.onresult = (event) => {
-    const text = event.results[0][0].transcript;
-    contextInput.value = text;
-    analysisResult.textContent = `음성 인식: ${text}`;
-  };
-
-  recognition.onerror = () => {
-    analysisResult.textContent = "음성 인식 중 오류가 발생했습니다.";
-  };
-
-  recognition.start();
-});
-
-map.on("click", () => {
-  if (!searchResults.hidden) searchResults.hidden = true;
-});
-
+map.on("click", () => { if (!searchResults.hidden) searchResults.hidden = true; });
 fetchRoute();
