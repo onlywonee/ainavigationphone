@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>T맵 스타일 구간 태깅</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <div id="map"></div>
+
+      <header class="top-panel">
+        <div class="statusbar">
+          <span>1:45</span>
+          <span>📶 30%</span>
+        </div>
+
+        <div class="search-row">
+          <button class="icon">‹</button>
+          <input id="startInput" value="신사역" />
+          <button id="swapBtn" class="icon">⇅</button>
+        </div>
+
+        <div class="search-row">
+          <button class="icon">＋</button>
+          <input id="endInput" value="고속터미널역" />
+          <button id="searchRouteBtn" class="icon">⌕</button>
+        </div>
+
+        <div class="modes">
+          <button class="chip active" id="carMode">🚘 <span id="etaChip">16분</span></button>
+          <button class="chip">🚌</button>
+          <button class="chip">🚶</button>
+        </div>
+
+        <div id="searchResults" class="search-results" hidden></div>
+      </header>
+
+      <div class="ad-pill">🪙 만보기로 걷고 5만원 받으세요</div>
+
+      <div class="left-tools">
+        <button>★</button>
+        <button>◫</button>
+        <button>◎</button>
+      </div>
+
+      <div class="car-pill">🚗 미등록 ▾</div>
+
+      <section class="route-panel">
+        <div class="cards">
+          <article class="card selected">
+            <strong>티맵추천</strong>
+            <h3 id="primaryTime">16분</h3>
+            <p id="primaryMeta">17km · 통행료 없음</p>
+          </article>
+          <article class="card">
+            <strong>무료도로 우선</strong>
+            <h3 id="altTime">17분</h3>
+            <p id="altMeta">17km · 통행료 없음</p>
+          </article>
+        </div>
+        <div class="start-row">
+          <button id="enterTagModeBtn" class="ghost">태깅 모드</button>
+          <button class="start">안내시작</button>
+        </div>
+      </section>
+
+      <div id="tagHint" class="tag-hint" hidden>경로를 더블클릭 후, 경로 위 2지점을 눌러 구간을 선택하세요.</div>
+
+      <section id="loadingSheet" class="sheet" hidden>
+        <h2>AI가 구간 태깅 요약중이에요...</h2>
+        <button id="voiceBtn" class="mic">🎤</button>
+        <button id="showProposalBtn" class="text-link">텍스트로 입력하기</button>
+      </section>
+
+      <section id="proposalSheet" class="sheet" hidden>
+        <h2>이렇게 태깅할까요?</h2>
+        <p id="proposalText">국민대학교 갈 때 - 도착 시간 차이가 8분 이하면 이 구간은 피하고 성수대로로 우회합니다.</p>
+        <button id="confirmTagBtn" class="add-btn">구간 태깅 추가하기</button>
+      </section>
+
+      <section id="completeToast" class="complete" hidden>
+        <h2>구간 태깅 완료 ✔</h2>
+        <p id="completeText">국민대학교 갈 때 도착 예정시간의 차이가 8분 이하면 이 구간은 피하고 성수대로 우회합니다.</p>
+      </section>
+    </main>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="script.js"></script>
+  </body>
+</html>
