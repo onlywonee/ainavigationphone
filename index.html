@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>T맵 스타일 구간 태깅</title>
+    <title>T맵 스타일 구간 태깅 프로토타입</title>
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -13,37 +13,37 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="app">
-      <div id="map"></div>
+    <main class="tmapp" aria-label="T-map style app screen">
+      <div id="map" aria-label="지도"></div>
 
-      <header class="top-panel">
-        <div class="statusbar">
+      <div class="top-panel">
+        <div class="status-bar">
           <span>1:45</span>
           <span>📶 30%</span>
         </div>
 
         <div class="search-row">
-          <button class="icon">‹</button>
+          <button class="ghost-icon">‹</button>
           <input id="startInput" value="신사역" />
-          <button id="swapBtn" class="icon">⇅</button>
+          <button id="swapBtn" class="ghost-icon">⇅</button>
         </div>
 
         <div class="search-row">
-          <button class="icon">＋</button>
+          <button class="ghost-icon">＋</button>
           <input id="endInput" value="고속터미널역" />
-          <button id="searchRouteBtn" class="icon">⌕</button>
+          <button id="searchRouteBtn" class="ghost-icon">⌕</button>
         </div>
 
-        <div class="modes">
-          <button class="chip active" id="carMode">🚘 <span id="etaChip">16분</span></button>
-          <button class="chip">🚌</button>
-          <button class="chip">🚶</button>
+        <div class="transport-row">
+          <button class="mode active">🚘 16분</button>
+          <button class="mode">🚌</button>
+          <button class="mode">🚶</button>
         </div>
 
         <div id="searchResults" class="search-results" hidden></div>
-      </header>
+      </div>
 
-      <div class="ad-pill">🪙 만보기로 걷고 5만원 받으세요</div>
+      <div class="ad-pill">🪙 만보기로 걸고 5만원 받으세요</div>
 
       <div class="left-tools">
         <button>★</button>
@@ -51,44 +51,43 @@
         <button>◎</button>
       </div>
 
-      <div class="car-pill">🚗 미등록 ▾</div>
+      <div class="car-chip">🚗 미등록 ▾</div>
 
-      <section class="route-panel">
-        <div class="cards">
-          <article class="card selected">
+      <div class="bottom-panel">
+        <div class="cards-row">
+          <button class="route-card selected">
             <strong>티맵추천</strong>
-            <h3 id="primaryTime">16분</h3>
-            <p id="primaryMeta">17km · 통행료 없음</p>
-          </article>
-          <article class="card">
+            <p id="routeSummary">16분 · 17km · 통행료 없음</p>
+          </button>
+          <button class="route-card">
             <strong>무료도로 우선</strong>
-            <h3 id="altTime">17분</h3>
-            <p id="altMeta">17km · 통행료 없음</p>
-          </article>
+            <p>16분 · 17km · 통행료 없음</p>
+          </button>
         </div>
         <div class="start-row">
-          <button id="enterTagModeBtn" class="ghost">태깅 모드</button>
-          <button class="start">안내시작</button>
+          <button id="enterTagModeBtn" class="clock-btn">🕒</button>
+          <button class="start-btn">안내시작</button>
         </div>
-      </section>
+      </div>
 
-      <div id="tagHint" class="tag-hint" hidden>경로를 더블클릭 후, 경로 위 2지점을 눌러 구간을 선택하세요.</div>
+      <div id="tagInstruction" class="tag-tip" hidden>경로를 더블클릭하고 시작/끝 지점을 선택하세요.</div>
+
+      <div id="dimLayer" class="dim-layer" hidden></div>
 
       <section id="loadingSheet" class="sheet" hidden>
         <h2>AI가 구간 태깅 요약중이에요...</h2>
-        <button id="voiceBtn" class="mic">🎤</button>
-        <button id="showProposalBtn" class="text-link">텍스트로 입력하기</button>
+        <button id="voiceBtn" class="mic-btn">🎤</button>
       </section>
 
-      <section id="proposalSheet" class="sheet" hidden>
+      <section id="confirmSheet" class="sheet" hidden>
         <h2>이렇게 태깅할까요?</h2>
-        <p id="proposalText">국민대학교 갈 때 - 도착 시간 차이가 8분 이하면 이 구간은 피하고 성수대로로 우회합니다.</p>
-        <button id="confirmTagBtn" class="add-btn">구간 태깅 추가하기</button>
+        <p id="summaryText">고속터미널역 갈 때 - 도착 시간 차이가 8분 이하면 이 구간은 피하고 성수대로로 우회합니다.</p>
+        <button id="analyzeBtn" class="start-btn">구간 태깅 추가하기</button>
       </section>
 
-      <section id="completeToast" class="complete" hidden>
-        <h2>구간 태깅 완료 ✔</h2>
-        <p id="completeText">국민대학교 갈 때 도착 예정시간의 차이가 8분 이하면 이 구간은 피하고 성수대로 우회합니다.</p>
+      <section id="doneCard" class="done-card" hidden>
+        <h2>구간 태깅 완료 ✅</h2>
+        <p id="doneText">고속터미널역 갈 때 도착 예정시간의 차이가 8분 이하면 이 구간은 피하고 성수대로로 우회합니다.</p>
       </section>
     </main>
 
